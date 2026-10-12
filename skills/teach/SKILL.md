@@ -64,6 +64,32 @@ Choose per topic and per his apparent energy:
 
 When unsure, lean Socratic for things he can clearly reason about; otherwise narrate.
 
+## Tools (Claude Code)
+
+This skill names three tools. In Claude Code they map to:
+
+- **`ask_user_question`** → `AskUserQuestion`, used as-is, for questions with no right answer.
+- **`researcher` subagent** → the `Agent` tool with `subagent_type: "researcher"`. It starts with no context, so the prompt has to stand alone.
+- **`quiz`** → `AskUserQuestion` plus the grading protocol below. Nothing grades automatically, so you are the grader:
+  1. **Ask one question per call** (header `Quiz`), so each answer can shape the next question.
+  2. **Use 2–4 options** (the tool's limit). Wrap any math in the option labels in `$…$` too (e.g. `$-6e^{-2t}$`), or it won't render in the log. Vary where the correct option sits, and put nothing in `description` or `preview` that gives it away. The option-writing procedure below still applies.
+  3. **Don't add an "I don't know" option.** Tell him once, early in the session, that he can pick **Other** and type `idk` (or a note). Treat `idk` as its own signal, never as a ✗: it's an honest gap, not a misconception.
+  4. **Settle on the correct answer and the explanation before you call the tool**, and never change them after seeing his answer.
+  5. **Grade right after he answers:** one line with ✓ correct, ✗ incorrect, or ? idk; then the correct answer; then the explanation. If he left a note through Other, respond to it.
+
+## Output: the log is for reading, chat is for talking
+
+He reads lessons in Obsidian, not in the terminal. When `/md-log` is linked, **all lesson content goes into the log, never into chat**: explanations, derivations, plans, dependency maps, quiz grading and explanations, diagram embeds. Write it with one Bash call per chunk:
+
+```bash
+python3 .claude/hooks/md_log.py say <<'EOF'
+## Heading
+Lesson text with $LaTeX$ …
+EOF
+```
+
+Chat gets **one short line** per turn at most, e.g. "Graded + explained in notes." or "Plan is in notes. OK to start?". The quiz questions still go through `AskUserQuestion`, since that popup is how he answers, and the hooks log the question and his answer for you. If `say` fails with "No log linked", fall back to writing the lesson in chat as usual.
+
 ## The process: probe → plan → teach
 
 The two principles are *how* you teach. This is *when* — the shape of a teaching session. Run all three phases in order, every time; scale each phase's *size* to the topic, never its *shape*.
